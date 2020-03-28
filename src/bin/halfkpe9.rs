@@ -1,0 +1,96 @@
+use rand::prelude::*;
+use std::fs::{self, File};
+use std::io::Write;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = "eval_halfkpe9";
+    println!("{}", dir);
+    fs::create_dir(dir)?;
+    let mut rng = rand::thread_rng();
+    for id in 0..10 {
+        fs::create_dir(format!("{}/{:03}", dir, id))?;
+        let mut file = File::create(format!("{}/{:03}/nn.bin", dir, id))?;
+
+        let i8shift1 = 6;
+        let i8shift2 = 5;
+        let i8shift3 = 5;
+        let i8shift4 = 5;
+
+        // header 0 : 0x0 (197 = 0xC5)
+        let mut data = vec![
+            0x16_u8, 0x2F, 0xF3, 0x7A, 0xEE, 0xA6, 0x5A, 0x3E, 0xB5, 0x00, 0x00, 0x00, 0x46, 0x65,
+            0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x3D, 0x48, 0x61, 0x6C, 0x66, 0x4B, 0x50, 0x45,
+            0x39, 0x28, 0x46, 0x72, 0x69, 0x65, 0x6E, 0x64, 0x29, 0x5B, 0x31, 0x31, 0x32, 0x38,
+            0x34, 0x39, 0x32, 0x2D, 0x3E, 0x32, 0x35, 0x36, 0x78, 0x32, 0x5D, 0x2C, 0x4E, 0x65,
+            0x74, 0x77, 0x6F, 0x72, 0x6B, 0x3D, 0x41, 0x66, 0x66, 0x69, 0x6E, 0x65, 0x54, 0x72,
+            0x61, 0x6E, 0x73, 0x66, 0x6F, 0x72, 0x6D, 0x5B, 0x31, 0x3C, 0x2D, 0x33, 0x32, 0x5D,
+            0x28, 0x43, 0x6C, 0x69, 0x70, 0x70, 0x65, 0x64, 0x52, 0x65, 0x4C, 0x55, 0x5B, 0x33,
+            0x32, 0x5D, 0x28, 0x41, 0x66, 0x66, 0x69, 0x6E, 0x65, 0x54, 0x72, 0x61, 0x6E, 0x73,
+            0x66, 0x6F, 0x72, 0x6D, 0x5B, 0x33, 0x32, 0x3C, 0x2D, 0x33, 0x32, 0x5D, 0x28, 0x43,
+            0x6C, 0x69, 0x70, 0x70, 0x65, 0x64, 0x52, 0x65, 0x4C, 0x55, 0x5B, 0x33, 0x32, 0x5D,
+            0x28, 0x41, 0x66, 0x66, 0x69, 0x6E, 0x65, 0x54, 0x72, 0x61, 0x6E, 0x73, 0x66, 0x6F,
+            0x72, 0x6D, 0x5B, 0x33, 0x32, 0x3C, 0x2D, 0x35, 0x31, 0x32, 0x5D, 0x28, 0x49, 0x6E,
+            0x70, 0x75, 0x74, 0x53, 0x6C, 0x69, 0x63, 0x65, 0x5B, 0x35, 0x31, 0x32, 0x28, 0x30,
+            0x3A, 0x35, 0x31, 0x32, 0x29, 0x5D, 0x29, 0x29, 0x29, 0x29, 0x29, 0xB8, 0xD7, 0x69,
+            0x5D,
+        ];
+        // end 197 : 0xC5
+        // start HalfKPE9(Friend)[1128492->256x2]
+        // bias 197 : 0xC5 (512)
+        let mut buf = vec![0_u8; 512];
+        data.append(&mut buf);
+        // weight 709 : 0x2C5 (1_128_492 * 512 = 577_787_904)
+        let mut buf = vec![0_u8; 1_128_492 * 512];
+        rng.fill_bytes(buf.as_mut());
+        for e in buf.iter_mut() {
+            *e = ((*e as i8) >> i8shift1) as u8;
+        }
+        data.append(&mut buf);
+        // end 577_788_613 : 0x‭2270_5AC5
+        // start ????
+        // ???? 577_788_613 : 0x2270_5AC5 (4)
+        let mut buf = vec![0x56_u8, 0x71, 0x33, 0x63];
+        data.append(&mut buf);
+        // end 577_788_617 : 0x‭2270_5AC9
+        // start AffineTransform[32<-512](InputSlice[512(0:512)])
+        // bias 577_788_617 : 0x‭2270_5AC9 (4 * 32 = 128)
+        let mut buf = vec![0_u8; 4 * 32];
+        data.append(&mut buf);
+        // weight 577_788_745 : 0x‭2270_5B49 (512 * 32 = 16_384)
+        let mut buf = vec![0_u8; 512 * 32];
+        rng.fill_bytes(buf.as_mut());
+        for e in buf.iter_mut() {
+            *e = ((*e as i8) >> i8shift2) as u8;
+        }
+        data.append(&mut buf);
+        // end 577_805_129 : 0x‭2270_9B49
+        // start AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))
+        // bias 577_805_129 : ‭0x2270_9B49 (4 * 32 = 128)
+        let mut buf = vec![0_u8; 4 * 32];
+        data.append(&mut buf);
+        // weight 577_805_257 : 0x‭2270_9BC9 (32 * 32 = 1_024)
+        let mut buf = vec![0_u8; 32 * 32];
+        rng.fill_bytes(buf.as_mut());
+        for e in buf.iter_mut() {
+            *e = ((*e as i8) >> i8shift3) as u8;
+        }
+        data.append(&mut buf);
+        // end 577_806_281 : 0x2270_9FC9‬
+        // start AffineTransform[1<-32](ClippedReLU[32](AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))))
+        // bias 577_806_281 : 0x2270_9FC9‬ (4)
+        let mut buf = vec![0_u8; 4];
+        data.append(&mut buf);
+        // weight 577_806_285 : 0x‭2270_9FCD (32)
+        let mut buf = vec![0_u8; 32];
+        rng.fill_bytes(buf.as_mut());
+        for e in buf.iter_mut() {
+            *e = ((*e as i8) >> i8shift4) as u8;
+        }
+        data.append(&mut buf);
+        // end 577_806_317 : 0x2270_9FED
+
+        file.write_all(&data)?;
+        file.flush()?;
+    }
+    Ok(())
+}
