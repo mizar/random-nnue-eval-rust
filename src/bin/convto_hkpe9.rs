@@ -1,0 +1,95 @@
+use std::env;
+use std::fs::File;
+use std::io::{Read, Write};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+
+    let ifilename = &args[1];
+    let ofilename = &args[2];
+
+    let mut ifile = File::open(ifilename)?;
+    let mut idata = Vec::new();
+    ifile.read_to_end(&mut idata)?;
+
+    if idata.len() != 64_217_066 {
+        panic!(
+            "ifile length is not 64_217_066 bytes, length {}",
+            idata.len()
+        );
+    }
+
+    // a: header 0:194 (194)
+    // b: header 0:197 (197)
+    let mut odata = vec![
+        0x16_u8, 0x2F, 0xF3, 0x7A, 0xEE, 0xA6, 0x5A, 0x3E, 0xB5, 0x00, 0x00, 0x00, 0x46, 0x65,
+        0x61, 0x74, 0x75, 0x72, 0x65, 0x73, 0x3D, 0x48, 0x61, 0x6C, 0x66, 0x4B, 0x50, 0x45, 0x39,
+        0x28, 0x46, 0x72, 0x69, 0x65, 0x6E, 0x64, 0x29, 0x5B, 0x31, 0x31, 0x32, 0x38, 0x34, 0x39,
+        0x32, 0x2D, 0x3E, 0x32, 0x35, 0x36, 0x78, 0x32, 0x5D, 0x2C, 0x4E, 0x65, 0x74, 0x77, 0x6F,
+        0x72, 0x6B, 0x3D, 0x41, 0x66, 0x66, 0x69, 0x6E, 0x65, 0x54, 0x72, 0x61, 0x6E, 0x73, 0x66,
+        0x6F, 0x72, 0x6D, 0x5B, 0x31, 0x3C, 0x2D, 0x33, 0x32, 0x5D, 0x28, 0x43, 0x6C, 0x69, 0x70,
+        0x70, 0x65, 0x64, 0x52, 0x65, 0x4C, 0x55, 0x5B, 0x33, 0x32, 0x5D, 0x28, 0x41, 0x66, 0x66,
+        0x69, 0x6E, 0x65, 0x54, 0x72, 0x61, 0x6E, 0x73, 0x66, 0x6F, 0x72, 0x6D, 0x5B, 0x33, 0x32,
+        0x3C, 0x2D, 0x33, 0x32, 0x5D, 0x28, 0x43, 0x6C, 0x69, 0x70, 0x70, 0x65, 0x64, 0x52, 0x65,
+        0x4C, 0x55, 0x5B, 0x33, 0x32, 0x5D, 0x28, 0x41, 0x66, 0x66, 0x69, 0x6E, 0x65, 0x54, 0x72,
+        0x61, 0x6E, 0x73, 0x66, 0x6F, 0x72, 0x6D, 0x5B, 0x33, 0x32, 0x3C, 0x2D, 0x35, 0x31, 0x32,
+        0x5D, 0x28, 0x49, 0x6E, 0x70, 0x75, 0x74, 0x53, 0x6C, 0x69, 0x63, 0x65, 0x5B, 0x35, 0x31,
+        0x32, 0x28, 0x30, 0x3A, 0x35, 0x31, 0x32, 0x29, 0x5D, 0x29, 0x29, 0x29, 0x29, 0x29, 0xB8,
+        0xD7, 0x69, 0x5D,
+    ];
+    odata.reserve(577_806_120);
+
+    // a: start HalfKP(Friend)[125388->256x2]
+    // b: start HalfKPE9(Friend)[1128492->256x2]
+
+    // a: bias 194:706 (512)
+    // b: bias 197:709 (512)
+    odata.extend_from_slice(&idata[194..706]);
+
+    // a: weight 706:64_199_362 (125_388 * 512 = 64_198_656)
+    // b: weight 709:577_788_613 (1_128_492 * 512 = 577_787_904)
+    for _i in 0..9 {
+        odata.extend_from_slice(&idata[706..64_199_362]);
+    }
+
+    // a: start ????
+    // b: start ????
+
+    // a: ???? 64_199_362:64_199_366 (4)
+    // b: ???? 577_788_613:577_788_617 (4)
+
+    // a: start AffineTransform[32<-512](InputSlice[512(0:512)])
+    // b: start AffineTransform[32<-512](InputSlice[512(0:512)])
+
+    // a: bias 64_199_366:64_215_878 (4 * 32 = 128)
+    // b: bias 577_788_617:577_788_745 (4 * 32 = 128)
+
+    // a: weight 64_199_494:64_215_878 (512 * 32 = 16_384)
+    // b: weight 577_788_745:577_805_129 (512 * 32 = 16_384)
+
+    // a: start AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))
+    // b: start AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))
+
+    // a: bias 64_215_878:64_216_006 (4 * 32 = 128)
+    // b: bias 577_805_129:577_805_257 (4 * 32 = 128)
+
+    // a: weight 64_216_006:64_217_030 (32 * 32 = 1_024)
+    // b: weight 577_805_257:577_806_281 (32 * 32 = 1_024)
+
+    // a: start AffineTransform[1<-32](ClippedReLU[32](AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))))
+    // b: start AffineTransform[1<-32](ClippedReLU[32](AffineTransform[32<-32](ClippedReLU[32](AffineTransform[32<-512](InputSlice[512(0:512)])))))
+
+    // a: bias 64_217_030:64_217_034 (4)
+    // b: bias 577_806_281:577_806_285 (4)
+
+    // a: weight 64_217_034:64_217_066‬ (32)
+    // b: weight 577_806_285:577_806_317 (32)
+
+    odata.extend_from_slice(&idata[64_199_362..64_217_066]);
+
+    let mut ofile = File::create(ofilename)?;
+    ofile.write_all(&odata)?;
+    ofile.flush()?;
+
+    Ok(())
+}

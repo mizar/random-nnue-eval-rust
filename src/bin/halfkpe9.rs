@@ -1,21 +1,23 @@
-use rand::prelude::*;
+use rand::Rng;
+use rand_distr::{Distribution, Normal};
 use std::fs::{self, File};
 use std::io::Write;
+
+fn sample<R: Rng>(rng: &mut R, norm: &Normal<f64>) -> u8 {
+    norm.sample(rng).max(-120_f64).min(120_f64) as i8 as u8
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = "eval_halfkpe9";
     println!("{}", dir);
     fs::create_dir(dir)?;
     let mut rng = rand::thread_rng();
+    let l0norm = Normal::new(0.0, 1.5).unwrap();
+    let l1norm = Normal::new(0.0, 1.5).unwrap();
+    let l2norm = Normal::new(0.0, 1.5).unwrap();
+    let l3norm = Normal::new(0.0, 2.0).unwrap();
     for id in 0..10 {
-        fs::create_dir(format!("{}/{:03}", dir, id))?;
-        let mut file = File::create(format!("{}/{:03}/nn.bin", dir, id))?;
-
-        let i8shift1 = 6;
-        let i8shift2 = 5;
-        let i8shift3 = 5;
-        let i8shift4 = 5;
-
+        let mut wvals = [[0_u64; 256]; 4];
         // header 0 : 0x0 (197 = 0xC5)
         let mut data = vec![
             0x16_u8, 0x2F, 0xF3, 0x7A, 0xEE, 0xA6, 0x5A, 0x3E, 0xB5, 0x00, 0x00, 0x00, 0x46, 0x65,
@@ -41,9 +43,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.append(&mut buf);
         // weight 709 : 0x2C5 (1_128_492 * 512 = 577_787_904)
         let mut buf = vec![0_u8; 1_128_492 * 512];
-        rng.fill_bytes(buf.as_mut());
         for e in buf.iter_mut() {
-            *e = ((*e as i8) >> i8shift1) as u8;
+            *e = sample(&mut rng, &l0norm);
+            wvals[0][*e as usize] += 1;
         }
         data.append(&mut buf);
         // end 577_788_613 : 0x‭2270_5AC5
@@ -58,9 +60,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.append(&mut buf);
         // weight 577_788_745 : 0x‭2270_5B49 (512 * 32 = 16_384)
         let mut buf = vec![0_u8; 512 * 32];
-        rng.fill_bytes(buf.as_mut());
         for e in buf.iter_mut() {
-            *e = ((*e as i8) >> i8shift2) as u8;
+            *e = sample(&mut rng, &l1norm);
+            wvals[1][*e as usize] += 1;
         }
         data.append(&mut buf);
         // end 577_805_129 : 0x‭2270_9B49
@@ -70,9 +72,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.append(&mut buf);
         // weight 577_805_257 : 0x‭2270_9BC9 (32 * 32 = 1_024)
         let mut buf = vec![0_u8; 32 * 32];
-        rng.fill_bytes(buf.as_mut());
         for e in buf.iter_mut() {
-            *e = ((*e as i8) >> i8shift3) as u8;
+            *e = sample(&mut rng, &l2norm);
+            wvals[2][*e as usize] += 1;
         }
         data.append(&mut buf);
         // end 577_806_281 : 0x2270_9FC9‬
@@ -82,13 +84,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.append(&mut buf);
         // weight 577_806_285 : 0x‭2270_9FCD (32)
         let mut buf = vec![0_u8; 32];
-        rng.fill_bytes(buf.as_mut());
         for e in buf.iter_mut() {
-            *e = ((*e as i8) >> i8shift4) as u8;
+            *e = sample(&mut rng, &l3norm);
+            wvals[3][*e as usize] += 1;
         }
         data.append(&mut buf);
         // end 577_806_317 : 0x2270_9FED
 
+        let mut wvals_sum = [0f64; 4];
+        let mut wvals_sqsum = [0f64; 4];
+        let mut wvals_count = [0u64; 4];
+        print!("eval{:03}", id);
+        for i in 0..4 {
+            let mut min = 127i8;
+            let mut max = -128i8;
+            for v in 0..255 {
+                wvals_sum[i] += (v as i8 as f64) * ((wvals[i][v]) as f64);
+                wvals_sqsum[i] += (v as i8 as f64).powi(2) * ((wvals[i][v]) as f64);
+                wvals_count[i] += wvals[i][v];
+                if wvals[i][v] > 0 {
+                    min = min.min(v as i8);
+                    max = max.max(v as i8);
+                }
+            }
+            let sdev = (wvals_sqsum[i] / ((wvals_count[i]) as f64)
+                - (wvals_sum[i] / ((wvals_count[i]) as f64)).powi(2))
+                .sqrt();
+            print!(" L{}:min{:+}:max{:+}:sdev{:.2}", i, min, max, sdev);
+        }
+        println!();
+
+        fs::create_dir(format!("{}/{:03}", dir, id))?;
+        let mut file = File::create(format!("{}/{:03}/nn.bin", dir, id))?;
         file.write_all(&data)?;
         file.flush()?;
     }

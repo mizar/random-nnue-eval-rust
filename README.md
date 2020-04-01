@@ -15,3 +15,9 @@ cargo run --release --bin halfkp
 ```
 cargo run --release --bin halfkpe9
 ```
+
+- convert HalfKP to HalfKPE9
+
+```
+cargo run --release --bin convtokpe9 from_halfkp_eval_dir/nn.bin to_halfkpe9_eval_dir/nn.bin
+```
