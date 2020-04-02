@@ -21,3 +21,9 @@ cargo run --release --bin halfkpe9
 ```
 cargo run --release --bin convtokpe9 from_halfkp_eval_dir/nn.bin to_halfkpe9_eval_dir/nn.bin
 ```
+
+- playout filter
+
+```
+cargo run --release --bin psfen_filter from_genkifu/ to_genkifu/
+```

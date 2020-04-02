@@ -12,10 +12,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", dir);
     fs::create_dir(dir)?;
     let mut rng = rand::thread_rng();
-    let l0norm = Normal::new(0.0, 1.5).unwrap();
-    let l1norm = Normal::new(0.0, 1.5).unwrap();
-    let l2norm = Normal::new(0.0, 1.5).unwrap();
-    let l3norm = Normal::new(0.0, 2.0).unwrap();
+    let l0norm = Normal::new(0.0, 8.0).unwrap();
+    let l1norm = Normal::new(0.0, 4.0).unwrap();
+    let l2norm = Normal::new(0.0, 10.0).unwrap();
+    let l3norm = Normal::new(0.0, 10.0).unwrap();
     for id in 0..10 {
         let mut wvals = [[0_u64; 256]; 4];
         // header 0 : 0x0 (197 = 0xC5)
@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             let sdev = (wvals_sqsum[i] / ((wvals_count[i]) as f64)
                 - (wvals_sum[i] / ((wvals_count[i]) as f64)).powi(2))
-                .sqrt();
+            .sqrt();
             print!(" L{}:min{:+}:max{:+}:sdev{:.2}", i, min, max, sdev);
         }
         println!();
