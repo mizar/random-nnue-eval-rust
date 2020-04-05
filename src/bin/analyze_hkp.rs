@@ -10,9 +10,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut idata = Vec::new();
     ifile.read_to_end(&mut idata)?;
 
-    if idata.len() != 577_806_317 {
+    if idata.len() != 64_217_066 {
         panic!(
-            "ifile length is not 577_806_317 bytes, length {}",
+            "ifile length is not 64_217_066 bytes, length {}",
             idata.len()
         );
     }
