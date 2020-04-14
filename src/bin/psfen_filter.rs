@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 use std::env;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 
@@ -51,18 +51,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let idirname = &args[1];
     let odirname = &args[2];
 
-    for ipath in fs::read_dir(idirname).unwrap() {
-
-        let ifilepath = ipath.unwrap().path();
-
-        // ファイル名が".bin"で終わるファイルのみ処理
-        if !(ifilepath.file_name().unwrap().to_str().unwrap().ends_with(".bin")) {
-            continue;
-        }
-        println!("{:?}", ifilepath);
+    for ipath in fs::read_dir(idirname)
+        .unwrap()
+        .map(|readdir| readdir.unwrap().path())
+        .filter(|ipath| {
+            ipath
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .contains(".bin")
+        })
+    {
+        println!("{:?}", ipath);
 
         // ファイル読み込み
-        let mut ifile = BufReader::new(File::open(&ifilepath).unwrap());
+        let mut ifile = BufReader::new(File::open(&ipath).unwrap());
         let mut idata: Vec<u8> = Vec::new();
         ifile.read_to_end(&mut idata)?;
 
@@ -101,14 +105,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // 出力
-        let mut ofile = BufWriter::new(File::create(Path::new(odirname).join(&ifilepath.file_name().unwrap())).unwrap());
+        let mut ofile = BufWriter::new(
+            OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(Path::new(odirname).join(&ipath.file_name().unwrap()))
+                .unwrap(),
+        );
         for psfen in vpsfenv {
             if psfen.padding == 0 {
                 ofile.write_all(psfen.to_bytes().as_ref())?;
             }
         }
         ofile.flush()?;
-
     }
 
     Ok(())
