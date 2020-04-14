@@ -84,6 +84,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if vpsfenv.len() >= 5 {
             for i in 2..(vpsfenv.len() - 2) {
                 if vpsfenv[i].game_result == -1
+                    && vpsfenv[i - 2].game_ply == vpsfenv[i - 1].game_ply + 1
+                    && vpsfenv[i - 2].game_ply == vpsfenv[i].game_ply + 2
+                    && vpsfenv[i - 2].game_ply == vpsfenv[i + 1].game_ply + 3
                     && vpsfenv[i - 2].game_ply == vpsfenv[i + 2].game_ply + 4
                     && vpsfenv[i].score < vpsfenv[i + 2].score
                     && vpsfenv[i + 2].score < vpsfenv[i - 2].score

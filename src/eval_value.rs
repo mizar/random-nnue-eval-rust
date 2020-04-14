@@ -196,12 +196,11 @@ where
         Ok(())
     }
     fn weight_analyze(&self) -> &Self {
-        let mut wvals = Vec::new();
         let mut wval = [0u64; 256];
         for e in &self.get_feature().weight {
             wval[*e as u8 as usize] += 1;
         }
-        wvals.push(wval);
+        let mut wvals = vec![wval];
         for l in self.get_affine() {
             let mut wval = [0u64; 256];
             for e in &l.weight {
