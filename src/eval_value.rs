@@ -124,7 +124,8 @@ where
 
         if idata.len() != data_len {
             panic!(
-                "ifile length is not {} bytes, length {}",
+                "ifile {} length is not {} bytes, this length is {} bytes",
+                ifilename,
                 data_len,
                 idata.len()
             );
