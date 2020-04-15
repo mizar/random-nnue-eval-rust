@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ofilename = &args[2];
 
     EvalValueNnueHalfKP::from_hkpe9(&EvalValueNnueHalfKPE9::load(ifilename)?)
-        .weight_analyze()
+        .analyze()
         .save(ofilename)?;
 
     Ok(())

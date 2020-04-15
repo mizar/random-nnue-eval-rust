@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(_) => {}
         }
         eval.clear_weight(NAN, 7.0, 20.0, 50.0)
-            .weight_analyze()
+            .analyze()
             .save(&format!("{}/{:03}/nn.bin", odir, id))?;
     }
 

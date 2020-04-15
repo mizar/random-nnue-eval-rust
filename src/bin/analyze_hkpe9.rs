@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let ifilename = &args[1];
 
-    EvalValueNnueHalfKPE9::load(ifilename)?.weight_analyze();
+    EvalValueNnueHalfKPE9::load(ifilename)?.analyze();
 
     Ok(())
 }

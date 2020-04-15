@@ -71,7 +71,11 @@ where
             let norm = Normal::new(0.0, std_dev_w1).unwrap();
             let mut weight = Vec::<i8>::with_capacity(Self::FEATURE_DEF.weight);
             for _ in 0..Self::FEATURE_DEF.weight {
-                weight.push(norm.sample(&mut rng).max(-128_f64).min(127_f64) as i8);
+                weight.push(
+                    norm.sample(&mut rng)
+                        .max(i8::min_value() as f64)
+                        .min(i8::max_value() as f64) as i8,
+                );
             }
             FeatureLayer {
                 bias: vec![0_i8; Self::FEATURE_DEF.bias],
@@ -212,13 +216,29 @@ where
 
         Ok(())
     }
-    fn weight_analyze(&self) -> &Self {
+    fn analyze(&self) -> &Self {
+        let mut bmin = i8::max_value();
+        let mut bmax = i8::min_value();
         let mut wval = [0u64; 256];
+        for e in &self.get_feature().bias {
+            bmin = bmin.min(*e);
+            bmax = bmax.max(*e);
+        }
         for e in &self.get_feature().weight {
             wval[*e as u8 as usize] += 1;
         }
         let mut wvals = vec![wval];
+        let mut bmins = vec![bmin as i16];
+        let mut bmaxs = vec![bmax as i16];
         for l in self.get_affine() {
+            let mut bmin = i16::max_value();
+            let mut bmax = i16::min_value();
+            for e in &l.bias {
+                bmin = bmin.min(*e);
+                bmax = bmax.max(*e);
+            }
+            bmins.push(bmin);
+            bmaxs.push(bmax);
             let mut wval = [0u64; 256];
             for e in &l.weight {
                 wval[*e as u8 as usize] += 1;
@@ -241,7 +261,15 @@ where
                 }
             }
             let sdev = (sqsum / (count as f64) - (sum / (count as f64)).powi(2)).sqrt();
-            println!("W{}:min={:+}:max={:+}:σ={:.2}", i + 1, min, max, sdev);
+            println!(
+                "W{}:bmin={:+},bmax={:+},wmin={:+}:wmax={:+}:σ={:.2}",
+                i + 1,
+                bmins[i],
+                bmaxs[i],
+                min,
+                max,
+                sdev
+            );
         }
         &self
     }
