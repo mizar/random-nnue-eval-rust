@@ -248,19 +248,19 @@ where
         for (i, l) in wvals.iter().enumerate() {
             let mut sum = 0f64;
             let mut sqsum = 0f64;
-            let mut count = 0u64;
-            let mut min = 127i8;
-            let mut max = -128i8;
+            let mut count = 0f64;
+            let mut min = i8::max_value();
+            let mut max = i8::min_value();
             for (j, e) in l.iter().enumerate() {
                 sum += (j as i8 as f64) * (*e as f64);
                 sqsum += (j as i8 as f64).powi(2) * (*e as f64);
-                count += *e;
+                count += *e as f64;
                 if *e > 0 {
                     min = min.min(j as i8);
                     max = max.max(j as i8);
                 }
             }
-            let sdev = (sqsum / (count as f64) - (sum / (count as f64)).powi(2)).sqrt();
+            let sdev = (sqsum / count - (sum / count).powi(2)).sqrt();
             println!(
                 "W{}:bmin={:+},bmax={:+},wmin={:+}:wmax={:+}:σ={:.2}",
                 i + 1,

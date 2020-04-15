@@ -15,7 +15,7 @@ struct PackedSfenValue {
 }
 
 impl PackedSfenValue {
-    fn to_bytes(&self) -> Box<[u8]> {
+    fn to_bytes(&self) -> Vec<u8> {
         let mut res = Vec::<u8>::with_capacity(40);
         res.extend_from_slice(&self.packedsfen);
         res.extend_from_slice(&self.score.to_le_bytes());
@@ -23,7 +23,7 @@ impl PackedSfenValue {
         res.extend_from_slice(&self.game_ply.to_le_bytes());
         res.extend_from_slice(&self.game_result.to_le_bytes());
         res.extend_from_slice(&self.padding.to_le_bytes());
-        res.as_slice().try_into().unwrap()
+        res
     }
 }
 
@@ -118,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         for psfen in vpsfenv {
             if psfen.padding == 0 {
-                ofile.write_all(psfen.to_bytes().as_ref())?;
+                ofile.write_all(&psfen.to_bytes())?;
             }
         }
         ofile.flush()?;
