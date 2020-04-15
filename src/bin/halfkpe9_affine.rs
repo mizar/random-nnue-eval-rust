@@ -3,8 +3,8 @@ use std::f64::NAN;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let odir = "eval_halfkpe9";
-    println!("{}", odir);
-    match std::fs::create_dir(odir) {
+    println!("{}", &odir);
+    match std::fs::create_dir(&odir) {
         Err(why) => println!("! {:?}", why.kind()),
         Ok(_) => {}
     }
@@ -16,7 +16,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let eval = EvalValueNnueHalfKPE9::load(&ifilename).unwrap();
 
     for id in 0..10 {
-        match std::fs::create_dir(format!("{}/{:03}", odir, id)) {
+        let sdir = format!("{}/{:03}", &odir, id);
+        println!("{}", &sdir);
+        match std::fs::create_dir(&sdir) {
             Err(why) => println!("! {:?}", why.kind()),
             Ok(_) => {}
         }

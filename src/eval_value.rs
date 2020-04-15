@@ -48,7 +48,7 @@ where
             bias: vec![0_i8; Self::FEATURE_DEF.bias],
             weight: vec![0_i8; Self::FEATURE_DEF.weight],
         };
-        let mut affine = Vec::new();
+        let mut affine = Vec::<AffineLayer>::with_capacity(Self::AFFINE_DEF.len());
         for e in Self::AFFINE_DEF {
             affine.push(AffineLayer {
                 bias: vec![0_i16; e.bias],
@@ -69,7 +69,7 @@ where
 
         let feature = if std_dev_w1.is_finite() {
             let norm = Normal::new(0.0, std_dev_w1).unwrap();
-            let mut weight = Vec::new();
+            let mut weight = Vec::<i8>::with_capacity(Self::FEATURE_DEF.weight);
             for _ in 0..Self::FEATURE_DEF.weight {
                 weight.push(norm.sample(&mut rng).max(-128_f64).min(127_f64) as i8);
             }
@@ -81,7 +81,7 @@ where
             self.get_feature().clone()
         };
 
-        let mut affine = Vec::new();
+        let mut affine = Vec::<AffineLayer>::with_capacity(Self::AFFINE_DEF.len());
         for (i, e) in Self::AFFINE_DEF.iter().enumerate() {
             let sdev = match i {
                 0 => std_dev_w2,
@@ -91,7 +91,7 @@ where
             };
             affine.push(if sdev.is_finite() {
                 let norm = Normal::new(0.0, sdev).unwrap();
-                let mut weight = Vec::new();
+                let mut weight = Vec::<i8>::with_capacity(e.weight);
                 for _ in 0..e.weight {
                     weight.push(norm.sample(&mut rng).max(-128_f64).min(127_f64) as i8);
                 }
@@ -110,17 +110,17 @@ where
         use std::convert::TryInto;
         use std::io::Read;
 
-        let mut ifile = std::fs::File::open(ifilename)?;
-        let mut idata = Vec::new();
-        ifile.read_to_end(&mut idata)?;
+        let data_len = Self::AFFINE_DEF.iter().fold(
+            Self::HEAD_BIN.len()
+                + Self::FEATURE_DEF.bias
+                + Self::FEATURE_DEF.weight
+                + Self::HASH_BIN.len(),
+            |r, e| (r + e.bias * 2 + e.weight),
+        );
 
-        let mut data_len = Self::HEAD_BIN.len()
-            + Self::FEATURE_DEF.bias
-            + Self::FEATURE_DEF.weight
-            + Self::HASH_BIN.len();
-        for &e in Self::AFFINE_DEF {
-            data_len += e.bias * 2 + e.weight;
-        }
+        let mut ifile = std::fs::File::open(ifilename)?;
+        let mut idata = Vec::<u8>::with_capacity(data_len);
+        ifile.read_to_end(&mut idata)?;
 
         if idata.len() != data_len {
             panic!(
@@ -130,20 +130,26 @@ where
             );
         }
 
-        let (_, dslice) = idata.split_at(Self::HEAD_BIN.len());
+        let (head_bin, dslice) = idata.split_at(Self::HEAD_BIN.len());
+        if (0..Self::HEAD_BIN.len()).any(|i| Self::HEAD_BIN[i] != head_bin[i]) {
+            panic!("head binary invalid");
+        }
         let (feature_bias_bin, dslice) = dslice.split_at(Self::FEATURE_DEF.bias);
         let (feature_weight_bin, dslice) = dslice.split_at(Self::FEATURE_DEF.weight);
         let feature = FeatureLayer {
             bias: unsafe { std::mem::transmute::<&[u8], &[i8]>(feature_bias_bin) }.to_vec(),
             weight: unsafe { std::mem::transmute::<&[u8], &[i8]>(feature_weight_bin) }.to_vec(),
         };
-        let (_, mut dslice) = dslice.split_at(Self::HASH_BIN.len());
-        let mut affine = Vec::new();
+        let (hash_bin, mut dslice) = dslice.split_at(Self::HASH_BIN.len());
+        if (0..Self::HASH_BIN.len()).any(|i| Self::HASH_BIN[i] != hash_bin[i]) {
+            panic!("hash binary invalid");
+        }
+        let mut affine = Vec::<AffineLayer>::with_capacity(Self::AFFINE_DEF.len());
         for &e in Self::AFFINE_DEF {
             let (affine_bias_bin, rest) = dslice.split_at(e.bias * 2);
             let (affine_weight_bin, rest) = rest.split_at(e.weight);
             dslice = rest;
-            let mut bias_vec = Vec::new();
+            let mut bias_vec = Vec::<i16>::with_capacity(e.bias);
             let mut affine_bias_mut = affine_bias_bin;
             for _ in 0..e.bias {
                 let (int_bytes, rest) = affine_bias_mut.split_at(std::mem::size_of::<i16>());
@@ -161,7 +167,15 @@ where
     fn save(&self, ofilename: &String) -> Result<(), Box<dyn std::error::Error>> {
         use std::io::Write;
 
-        let mut data = Vec::new();
+        let data_len = Self::AFFINE_DEF.iter().fold(
+            Self::HEAD_BIN.len()
+                + Self::FEATURE_DEF.bias
+                + Self::FEATURE_DEF.weight
+                + Self::HASH_BIN.len(),
+            |r, e| (r + e.bias * 2 + e.weight),
+        );
+
+        let mut data = Vec::<u8>::with_capacity(data_len);
 
         data.extend_from_slice(Self::HEAD_BIN);
 
@@ -177,21 +191,23 @@ where
 
         for e in self.get_affine() {
             for d in &e.bias {
-                let a = d.to_le_bytes();
-                data.extend_from_slice(&a);
+                data.extend_from_slice(&d.to_le_bytes());
             }
             data.extend_from_slice(unsafe {
                 std::mem::transmute::<&[i8], &[u8]>(e.weight.as_slice())
             });
         }
 
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(ofilename)?;
-        file.write_all(&data)?;
-        file.flush()?;
+        let mut bufw = std::io::BufWriter::new(
+            std::fs::OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .create(true)
+                .open(ofilename)
+                .unwrap(),
+        );
+        bufw.write_all(&data)?;
+        bufw.flush()?;
 
         Ok(())
     }
@@ -343,7 +359,7 @@ impl EvalValueNnueHalfKP {
 
 impl EvalValueNnueHalfKPE9 {
     pub fn from_hkp(hkp: &EvalValueNnueHalfKP) -> Self {
-        let mut weight = Vec::new();
+        let mut weight = Vec::<i8>::with_capacity(Self::FEATURE_DEF.weight);
         for _ in 0..9 {
             weight.extend_from_slice(hkp.feature.weight.as_slice());
         }
