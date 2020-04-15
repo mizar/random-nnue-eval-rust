@@ -40,6 +40,15 @@ where
     const HASH_BIN: &'static [u8];
     const FEATURE_DEF: &'static FeatureLayerParamSize;
     const AFFINE_DEF: &'static [&'static AffineLayerParamSize];
+    fn size() -> usize {
+        Self::AFFINE_DEF.iter().fold(
+            Self::HEAD_BIN.len()
+                + Self::FEATURE_DEF.bias
+                + Self::FEATURE_DEF.weight
+                + Self::HASH_BIN.len(),
+            |r, e| (r + e.bias * 2 + e.weight),
+        )
+    }
     fn get_feature(&self) -> &FeatureLayer;
     fn get_affine(&self) -> &Vec<AffineLayer>;
     fn new(feature: FeatureLayer, affine: Vec<AffineLayer>) -> Self;
@@ -114,13 +123,7 @@ where
         use std::convert::TryInto;
         use std::io::Read;
 
-        let data_len = Self::AFFINE_DEF.iter().fold(
-            Self::HEAD_BIN.len()
-                + Self::FEATURE_DEF.bias
-                + Self::FEATURE_DEF.weight
-                + Self::HASH_BIN.len(),
-            |r, e| (r + e.bias * 2 + e.weight),
-        );
+        let data_len = Self::size();
 
         let mut ifile = std::fs::File::open(ifilename)?;
         let mut idata = Vec::<u8>::with_capacity(data_len);
@@ -172,13 +175,7 @@ where
     fn save(&self, ofilename: &String) -> Result<(), Box<dyn std::error::Error>> {
         use std::io::Write;
 
-        let data_len = Self::AFFINE_DEF.iter().fold(
-            Self::HEAD_BIN.len()
-                + Self::FEATURE_DEF.bias
-                + Self::FEATURE_DEF.weight
-                + Self::HASH_BIN.len(),
-            |r, e| (r + e.bias * 2 + e.weight),
-        );
+        let data_len = Self::size();
 
         let mut data = Vec::<u8>::with_capacity(data_len);
 
