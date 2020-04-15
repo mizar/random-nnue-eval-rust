@@ -37,8 +37,8 @@ where
     Self: std::marker::Sized,
 {
     const HEAD_BIN: &'static [u8];
-    const HASH_BIN: &'static [u8];
     const FEATURE_DEF: &'static FeatureLayerParamSize;
+    const HASH_BIN: &'static [u8];
     const AFFINE_DEF: &'static [&'static AffineLayerParamSize];
     fn size() -> usize {
         Self::AFFINE_DEF.iter().fold(
@@ -288,11 +288,11 @@ impl EvalValueNnue for EvalValueNnueHalfKP {
         0x70, 0x75, 0x74, 0x53, 0x6C, 0x69, 0x63, 0x65, 0x5B, 0x35, 0x31, 0x32, 0x28, 0x30, 0x3A,
         0x35, 0x31, 0x32, 0x29, 0x5D, 0x29, 0x29, 0x29, 0x29, 0x29, 0xB8, 0xD7, 0x69, 0x5D,
     ];
-    const HASH_BIN: &'static [u8] = &[0x56, 0x71, 0x33, 0x63];
     const FEATURE_DEF: &'static FeatureLayerParamSize = &FeatureLayerParamSize {
         bias: 2 * 256,         // = 512
         weight: 125_388 * 512, // = 64_198_656
     };
+    const HASH_BIN: &'static [u8] = &[0x56, 0x71, 0x33, 0x63];
     const AFFINE_DEF: &'static [&'static AffineLayerParamSize] = &[
         &AffineLayerParamSize {
             bias: 2 * 32,     // = 64
@@ -338,11 +338,11 @@ impl EvalValueNnue for EvalValueNnueHalfKPE9 {
         0x28, 0x30, 0x3A, 0x35, 0x31, 0x32, 0x29, 0x5D, 0x29, 0x29, 0x29, 0x29, 0x29, 0xB8, 0xD7,
         0x69, 0x5D,
     ];
-    const HASH_BIN: &'static [u8] = &[0x56, 0x71, 0x33, 0x63];
     const FEATURE_DEF: &'static FeatureLayerParamSize = &FeatureLayerParamSize {
         bias: 2 * 256,             // = 512
         weight: 125_388 * 9 * 512, // = 577_787_904
     };
+    const HASH_BIN: &'static [u8] = &[0x56, 0x71, 0x33, 0x63];
     const AFFINE_DEF: &'static [&'static AffineLayerParamSize] = &[
         &AffineLayerParamSize {
             bias: 2 * 32,     // = 64
