@@ -10,4 +10,4 @@ license = "MIT"
 [dependencies]
 rand = "0.7"
 rand_distr = "0.2"
-separator = "0.3.1"
+separator = "0.4"
