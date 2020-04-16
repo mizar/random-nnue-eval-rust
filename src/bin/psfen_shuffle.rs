@@ -34,21 +34,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // データ構築
         loop {
-            match ifile.read(&mut buffer[..]) {
-                Ok(40) => vpsfenv.push(PackedSfenEntry {
-                    binary: buffer.clone(),
+            match ifile.read_exact(&mut buffer) {
+                Ok(_) => vpsfenv.push(PackedSfenEntry {
+                    binary: buffer,
                 }),
-                Ok(_) => break,
                 Err(_) => break,
             }
         }
     }
 
     // シャッフル
+    println!("% shuffle...");
     let mut rng = rand::thread_rng();
     vpsfenv.shuffle(&mut rng);
 
     // 出力
+    println!("% output...");
     let mut ofile = BufWriter::new(
         OpenOptions::new()
             .write(true)
@@ -57,8 +58,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .open(&ofilename)
             .unwrap(),
     );
-    for psfene in vpsfenv {
+    for (i, psfene) in vpsfenv.iter().enumerate() {
         ofile.write_all(&psfene.binary)?;
+        if i % 200000 == 0 {
+            print!(".");
+            std::io::stdout().flush().unwrap();
+            if i % 10000000 == 0 {
+                use separator::Separatable;
+                println!(" {}", i.separated_string());
+            }
+        }
     }
     ofile.flush()?;
 
