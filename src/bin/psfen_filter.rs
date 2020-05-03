@@ -25,6 +25,21 @@ impl PackedSfenValue {
         res.extend_from_slice(&self.padding.to_le_bytes());
         res
     }
+    fn turn(&self) -> u8 {
+        self.packedsfen[0] & 1
+    }
+    fn king_sq_black(&self) -> u8 {
+        self.packedsfen[0] >> 1
+    }
+    fn king_sq_white(&self) -> u8 {
+        self.packedsfen[1] & 127
+    }
+    fn king_rank_black(&self) -> u8 {
+        self.king_sq_black() % 9
+    }
+    fn king_rank_white(&self) -> u8 {
+        self.king_sq_white() % 9
+    }
 }
 
 fn read_psfen(input: &mut &[u8]) -> PackedSfenValue {
@@ -77,6 +92,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             vpsfenv.push(read_psfen(&mut bytes));
         }
 
+        // 入玉に加点
+        let king_enter_deltascore = 1000;
+        let king_r4_deltascore = 500;
+        let king_r5_deltascore = 300;
+        let king_r6_deltascore = 100;
+        for psfenv in vpsfenv.iter_mut() {
+            let turn = match psfenv.turn() {
+                0 => 1,
+                1 => -1,
+                _ => 0,
+            };
+            psfenv.score += turn
+                * match psfenv.king_rank_black() {
+                    0 => king_enter_deltascore,
+                    1 => king_enter_deltascore,
+                    2 => king_enter_deltascore,
+                    3 => king_r4_deltascore,
+                    4 => king_r5_deltascore,
+                    5 => king_r6_deltascore,
+                    _ => 0,
+                };
+            psfenv.score -= turn
+                * match psfenv.king_rank_white() {
+                    8 => king_enter_deltascore,
+                    7 => king_enter_deltascore,
+                    6 => king_enter_deltascore,
+                    5 => king_r4_deltascore,
+                    4 => king_r5_deltascore,
+                    3 => king_r6_deltascore,
+                    _ => 0,
+                };
+        }
+
         // 教師局面の事後的変更 @ WCSC29 水匠アピール文書 より
         // https://www.apply.computer-shogi.org/wcsc29/appeal/Suishou/WCSC29_appeal_2.pdf
 
@@ -99,11 +147,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // プレイアウトの勝敗と評価値の正負が不一致の場合書き出さない
         for psfenv in vpsfenv.iter_mut() {
-            if (*psfenv).game_result == 1 && (*psfenv).score <= 0 {
-                (*psfenv).padding = -1;
-            }
-            if (*psfenv).game_result == -1 && (*psfenv).score >= 0 {
-                (*psfenv).padding = -1;
+            if (psfenv.game_result == 1 && psfenv.score <= 0)
+                || (psfenv.game_result == -1 && psfenv.score >= 0)
+            {
+                psfenv.padding = -1;
             }
         }
 
